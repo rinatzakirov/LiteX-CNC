@@ -316,7 +316,7 @@ static int init_board(litexcnc_eth_t *board, const char *config_file) {
     LITEXCNC_PRINT_NO_DEVICE("Connecting to board at address: %s:1234 \n", json_object_get_string(ip_address));
     board->connection = eb_connect(json_object_get_string(ip_address), "1234", 1);
     if (!board->connection) {
-        rtapi_print_msg(RTAPI_MSG_ERR,"colorcnc: ERROR: failed to connect to board on ip-address '%s'\n", ip_address);
+        rtapi_print_msg(RTAPI_MSG_ERR,"colorcnc: ERROR: failed to connect to board on ip-address '%s'\n", json_object_get_string(ip_address));
         goto fail_disconnect;
     }
     json_object_put(ip_address);

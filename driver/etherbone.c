@@ -422,7 +422,7 @@ struct eb_connection *eb_connect(const char *addr, const char *port, int is_dire
         }
 		struct timeval timeout;
 		timeout.tv_sec = 0;        
-		timeout.tv_usec = 10000; //FIRST_PACKETS
+		timeout.tv_usec = RECV_TIMEOUT_US; //FIRST_PACKETS
 		err = setsockopt(rx_socket, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout));
 		if (err < 0) {
             close(rx_socket);

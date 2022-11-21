@@ -58,6 +58,7 @@ write_addr is specified along with a value.
 The same type of record is returned, so your data is at offset 16.
 */
 #define SEND_TIMEOUT_US 10
+#define RECV_TIMEOUT_US 500000
 
 struct eb_connection;
 
