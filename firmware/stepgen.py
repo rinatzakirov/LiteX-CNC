@@ -33,6 +33,11 @@ class StepgenConfig(BaseModel):
         "LVCMOS33",
         description="The IO Standard (voltage) to use for the pins."
     )
+    pseudo_diff: bool = Field(
+        False,
+        description="When True, there are two pins in definition separated by / that describe a pair in cases "
+        "where driver is not really a differential driver, but just two separately driven pins"
+    )
 
 
 class StepgenCounter(Module, AutoDoc):
@@ -103,6 +108,7 @@ class StepgenModule(Module, AutoDoc):
         # connected to any pads.
         if pads is None:
             pads = Record(self.pads_layout)
+        self.pads = pads
 
         # Store the pick-off (to prevent magic numbers later in the code)
         if isinstance(pick_off, int):
@@ -481,19 +487,40 @@ class StepgenModule(Module, AutoDoc):
             return
 
         for index, stepgen_config in enumerate(config):
-            soc.platform.add_extension([
-                ("stepgen", index,
-                    Subsignal("step", Pins(stepgen_config.step_pin), IOStandard(stepgen_config.io_standard)),
-                    Subsignal("dir", Pins(stepgen_config.dir_pin), IOStandard(stepgen_config.io_standard))
-                )
-            ])
+            if stepgen_config.pseudo_diff:
+                io_standards = stepgen_config.io_standard.split("/")
+                if len(io_standards) == 1:
+                    io_standards *= 2
+                soc.platform.add_extension([
+                    ("stepgen", index,
+                        Subsignal("step_p", Pins(stepgen_config.step_pin.split("/")[0]), IOStandard(io_standards[0])),
+                        Subsignal("step_n", Pins(stepgen_config.step_pin.split("/")[1]), IOStandard(io_standards[1])),
+                        Subsignal("dir_p" , Pins(stepgen_config.dir_pin .split("/")[0]), IOStandard(io_standards[0])),
+                        Subsignal("dir_n" , Pins(stepgen_config.dir_pin .split("/")[1]), IOStandard(io_standards[1]))
+                    )
+                ])
+            else:
+                soc.platform.add_extension([
+                    ("stepgen", index,
+                        Subsignal("step", Pins(stepgen_config.step_pin), IOStandard(stepgen_config.io_standard)),
+                        Subsignal("dir", Pins(stepgen_config.dir_pin), IOStandard(stepgen_config.io_standard))
+                    )
+                ])
             # Create the stepgen and add to the system
             stepgen = cls(
-                pads=soc.platform.request('stepgen', index),
+                pads=None if stepgen_config.pseudo_diff else soc.platform.request('stepgen', index),
                 pick_off=(32, 40, 48),
                 soft_stop=stepgen_config.soft_stop
             )
             soc.submodules += stepgen
+            if stepgen_config.pseudo_diff:
+                pads=soc.platform.request('stepgen', index)
+                soc.comb += [
+                    pads.step_p.eq( stepgen.pads.step),
+                    pads.step_n.eq(~stepgen.pads.step),
+                    pads.dir_p .eq( stepgen.pads.dir ),
+                    pads.dir_n .eq(~stepgen.pads.dir ),
+                ]
             # Connect all the memory
             soc.comb += [
                 # Data from MMIO to stepgen
