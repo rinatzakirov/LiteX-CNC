@@ -304,6 +304,7 @@ class EncoderModule(Module, AutoDoc):
         """
         print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" * 20)
         print("add_to_soc")
+        print(config)
 
         # Don't create the module when the config is empty (no encoders 
         # defined in this case)
@@ -315,49 +316,51 @@ class EncoderModule(Module, AutoDoc):
         #   outside the mainloop in a Cat-statement.
         index_pulse = []
         # - main loop for creating the encoders
-        for index, encoder_config in config:
+        for index, encoder_config in enumerate(config):
             # Add the io to the FPGA
             pads = []
-            if stepgen_config.pseudo_diff:
+            if encoder_config.pseudo_diff:
                 io_standards = encoder_config.io_standard.split("/")
                 if len(io_standards) == 1:
                     io_standards *= 3
-                if config.pin_A is not None:
-                    pads += ["pin_A_p", Subsignal(Pins(encoder_config.pin_A.split("/")[0]), IOStandard(io_standards[0]))]
-                    pads += ["pin_A_n", Subsignal(Pins(encoder_config.pin_A.split("/")[1]), IOStandard(io_standards[0]))]
-                if config.pin_B is not None:
-                    pads += ["pin_B_p", Subsignal(Pins(encoder_config.pin_B.split("/")[0]), IOStandard(io_standards[1]))]
-                    pads += ["pin_B_n", Subsignal(Pins(encoder_config.pin_B.split("/")[1]), IOStandard(io_standards[1]))]
-                if config.pin_Z is not None:
-                    pads += ["pin_Z_p", Subsignal(Pins(encoder_config.pin_Z.split("/")[0]), IOStandard(io_standards[2]))]
-                    pads += ["pin_Z_n", Subsignal(Pins(encoder_config.pin_Z.split("/")[1]), IOStandard(io_standards[2]))]
+                if encoder_config.pin_A is not None:
+                    pads += [Subsignal("pin_A_p", Pins(encoder_config.pin_A.split("/")[0]), IOStandard(io_standards[0]))]
+                    pads += [Subsignal("pin_A_n", Pins(encoder_config.pin_A.split("/")[1]), IOStandard(io_standards[0]))]
+                if encoder_config.pin_B is not None:
+                    pads += [Subsignal("pin_B_p", Pins(encoder_config.pin_B.split("/")[0]), IOStandard(io_standards[1]))]
+                    pads += [Subsignal("pin_B_n", Pins(encoder_config.pin_B.split("/")[1]), IOStandard(io_standards[1]))]
+                if encoder_config.pin_Z is not None:
+                    pads += [Subsignal("pin_Z_p", Pins(encoder_config.pin_Z.split("/")[0]), IOStandard(io_standards[2]))]
+                    pads += [Subsignal("pin_Z_n", Pins(encoder_config.pin_Z.split("/")[1]), IOStandard(io_standards[2]))]
             else:
-                if config.pin_A is not None:
+                if encoder_config.pin_A is not None:
                     pads += [Subsignal(Pins(encoder_config.pin_A), IOStandard(encoder_config.io_standard))]
-                if config.pin_B is not None:
+                if encoder_config.pin_B is not None:
                     pads += [Subsignal(Pins(encoder_config.pin_B), IOStandard(encoder_config.io_standard))]
-                if config.pin_Z is not None:
+                if encoder_config.pin_Z is not None:
                     pads += [Subsignal(Pins(encoder_config.pin_Z), IOStandard(encoder_config.io_standard))]
-            soc.platform.add_extension([["encoder", index] + pads])
+            ext = [tuple(["encoder", index] + pads)]
+            print(ext)
+            soc.platform.add_extension(ext)
 
             # Create the encoder
-            encoder = cls(encoder_config=encoder_config, pads=soc.platform.request("encoder", index) if stepgen_config.pseudo_diff else None)
-            if stepgen_config.pseudo_diff:
+            encoder = cls(encoder_config=encoder_config, pads=soc.platform.request("encoder", index) if not encoder_config.pseudo_diff else None)
+            if encoder_config.pseudo_diff:
                 pads = soc.platform.request("encoder", index)
                 def adapt_pin(pads_pin_p, pads_pin_n, encoder_pin):
-                    soc.comb += [
-                        If(pads_pin_p == 1 & pads_pin_n == 0,
+                    soc.sync += [
+                        If((pads_pin_p == 1) & (pads_pin_n == 0),
                             encoder_pin.eq(1),
                         ),
-                        If(pads_pin_p == 0 & pads_pin_n == 1,
+                        If((pads_pin_p == 0) & (pads_pin_n == 1),
                             encoder_pin.eq(0),
                         ),
                     ]
-                if config.pin_A is not None:
+                if encoder_config.pin_A is not None:
                     adapt_pin(pads.pin_A_p, pads.pin_A_n, encoder.pads.pin_A)
-                if config.pin_B is not None:
+                if encoder_config.pin_B is not None:
                     adapt_pin(pads.pin_B_p, pads.pin_B_n, encoder.pads.pin_B)
-                if config.pin_B is not None:
+                if encoder_config.pin_B is not None:
                     adapt_pin(pads.pin_Z_p, pads.pin_Z_n, encoder.pads.pin_Z)
             # Add the encoder to the soc
             soc.submodules += encoder
