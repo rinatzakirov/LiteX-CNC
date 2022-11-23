@@ -5,11 +5,14 @@
 # USAGE:
 #    halrun -I test_gpio_blink.hal
 loadrt litexcnc
-loadrt litexcnc_eth config_file="/home/pi/5a-75e-hello-gpio.json"
+#loadrt litexcnc_eth config_file="/home/pi/5a-75e-hello-gpio.json"
+loadrt litexcnc_eth config_file="/home/rinat/src/cnc_ether/colorlight/LiteX-CNC/examples/config0.json"
+
 loadrt threads name1=test-thread period1=50000000
 addf test_PWM_GPIO.write test-thread
 addf test_PWM_GPIO.read test-thread
 loadrt siggen
 addf siggen.0.update test-thread
-net blink siggen.0.clock => test_PWM_GPIO.gpio.j1:1.out
+#net blink siggen.0.clock => test_PWM_GPIO.gpio.j1:1.out
+net blink siggen.0.clock => test_PWM_GPIO.gpio.00.out
 start

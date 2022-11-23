@@ -1,6 +1,12 @@
 loadrt litexcnc
-loadrt litexcnc_debug config_file="/workspace/examples/5a-75e.json"
-setp test.0.gpio.j3:0.out 1
+#loadrt litexcnc_debug config_file="/workspace/examples/5a-75e.json"
+loadrt litexcnc_eth config_file="/home/rinat/src/cnc_ether/colorlight/LiteX-CNC/examples/config0.json"
+
+#setp test_PWM_GPIO.gpio.j1:1.out 1
+#setp test_PWM_GPIO.gpio.00.out 1
+#setp test_PWM_GPIO.gpio.01.out 1
+
 show pin
 loadrt threads name1=test-thread period1=500000000
-addf test.0.write test-thread
+addf test_PWM_GPIO.write test-thread
+start

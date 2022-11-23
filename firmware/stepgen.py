@@ -24,15 +24,31 @@ class StepGenPinoutStepDirConfig(BaseModel):
         "LVCMOS33",
         description="The IO Standard (voltage) to use for the pins."
     )
+    pseudo_diff: bool = Field(
+        False,
+        description="When True, there are two pins in definition separated by / that describe a pair in cases "
+        "where driver is not really a differential driver, but just two separately driven pins"
+    )
 
     def convert_to_signal(self):
         """
         Creates the pins for this layout.
         """
-        return (
-            Subsignal("step", Pins(self.step_pin), IOStandard(self.io_standard)),
-            Subsignal("dir", Pins(self.dir_pin), IOStandard(self.io_standard))
-        )
+        if self.pseudo_diff:
+            io_standards = self.io_standard.split("/")
+            if len(io_standards) == 1:
+                io_standards *= 2
+            return (
+                Subsignal("step_p", Pins(self.step_pin.split("/")[0]), IOStandard(io_standards[0])),
+                Subsignal("step_n", Pins(self.step_pin.split("/")[1]), IOStandard(io_standards[1])),
+                Subsignal("dir_p" , Pins(self.dir_pin .split("/")[0]), IOStandard(io_standards[0])),
+                Subsignal("dir_n" , Pins(self.dir_pin .split("/")[1]), IOStandard(io_standards[1]))
+            )
+        else:
+            return (
+                Subsignal("step", Pins(self.step_pin), IOStandard(self.io_standard)),
+                Subsignal("dir", Pins(self.dir_pin), IOStandard(self.io_standard))
+                )
 
     def create_routine(self, generator, pads):
 
@@ -47,10 +63,18 @@ class StepGenPinoutStepDirConfig(BaseModel):
         generator.dir = Signal(reset=True)
 
         # Link step and dir
-        generator.comb += [
-            pads.step.eq(generator.step),
-            pads.dir.eq(generator.dir),
-        ]
+        if self.pseudo_diff:
+            generator.comb += [
+                pads.step_p.eq(generator.step),
+                pads.dir_p.eq(generator.dir),
+                pads.step_n.eq(~generator.step),
+                pads.dir_n.eq(~generator.dir),
+            ]
+        else:
+            generator.comb += [
+                pads.step.eq(generator.step),
+                pads.dir.eq(generator.dir),
+            ]
         
         # - source which stores the value of the counters
         generator.dir_hold_time = Signal(32)

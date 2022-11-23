@@ -21,6 +21,7 @@ def build_soc(config):
         print("Generated fingerprint (CRC): ", fingerprint)
 
     # Generate the firmware
+    print(firmware_config)
     soc = firmware_config.generate(fingerprint)
     
     # Build the SOC
