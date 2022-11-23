@@ -302,9 +302,6 @@ class EncoderModule(Module, AutoDoc):
         NOTE: the configuration must be a list and should contain all the encoders at
         once. Otherwise naming conflicts will occur.
         """
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" * 20)
-        print("add_to_soc")
-        print(config)
 
         # Don't create the module when the config is empty (no encoders 
         # defined in this case)
