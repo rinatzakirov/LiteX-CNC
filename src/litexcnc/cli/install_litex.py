@@ -17,7 +17,7 @@ def cli(user):
     target = '/opt'
     if user:
         target = str(Path.home())
-    target = os.path.join(target, 'litex')
+    target = os.path.join(os.path.join(target, ".local"), 'litex')
     
     if not os.path.exists(target):
         os.mkdir(target)
