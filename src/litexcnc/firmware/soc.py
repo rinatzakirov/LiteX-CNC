@@ -66,9 +66,10 @@ class LitexCNC_Firmware(BaseModel):
     @validator('baseclass', pre=True)
     def import_baseclass(cls, value):
         components = value.split('.')
-        mod = __import__(components[0])
+        print(components)
+        mod = __import__("litexcnc")#+ components[0])
         print(mod)
-        for comp in components[1:]:
+        for comp in components[0:]:
             mod = getattr(mod, comp)
         return mod
 

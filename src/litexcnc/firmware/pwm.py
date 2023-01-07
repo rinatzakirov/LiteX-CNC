@@ -23,7 +23,7 @@ class PWMConfig(BaseModel):
         "LVCMOS33",
         description="The IO Standard (voltage) to use for the pin."
     )
-
+PWM=PWMConfig
 
 class PwmPdmModule(Module, AutoCSR):
     """Pulse Width Modulation
